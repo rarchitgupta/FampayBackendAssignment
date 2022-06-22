@@ -1,18 +1,21 @@
+import time
 from googleapiclient.discovery import build
 import datetime
 import models
 from database import engine, SessionLocal
-from sqlalchemy.orm import Session
-from dotenv import load_dotenv
+from settings import query, api_keys
 
-load_dotenv()
-
-api_key = "AIzaSyBDE4zeL7PRg4QVnne-PPmWjVizz545skg"
 query = "cricket"
 
-
+available_api_keys = api_keys
 
 def get_youtube_data(query, max_results):
+    """
+    Takes in the query string and max_results as parameters and returns data
+    fetched from the youtube API
+    """
+    if len(available_api_keys):
+        api_key = available_api_keys[0]
     try:
         youtube = build("youtube", "v3", developerKey=api_key)
         search_word = (
@@ -23,18 +26,19 @@ def get_youtube_data(query, max_results):
         results = search_word.get("items", [])
     except:
         results = {}
-        raise Exception("API key quota exceeded")
+        available_api_keys.pop(0)
+        if len(available_api_keys) == 0:
+            raise Exception("API key quota exceeded")
+        else:
+            get_youtube_data(query, max_results)
     return results
 
 
-def get_datetime(date_time):
-    return datetime.datetime.strptime(
-        date_time.split("T")[0] + " " + date_time.split("T")[1].split("Z")[0],
-        "%Y-%m-%d %H:%M:%S",
-    )
-
-
 def get_relevant_dict(result):
+    """
+    Takes each result from the youtube_data passed and converts it into a
+    python dictionary with relevant fields to be stored in the database
+    """
     return {
         "title": result["snippet"]["title"],
         "description": result["snippet"]["description"],
@@ -42,7 +46,11 @@ def get_relevant_dict(result):
         "thumbnail_url": result["snippet"]["thumbnails"]["medium"]["url"],
     }
 
-def save_yt_data(query):
+def save_yt_data():
+    """
+    Function that retrieves the relevant YT data dictionary
+    and writes it to SQL database
+    """
     db = SessionLocal()
     models.Base.metadata.create_all(bind=engine)
     youtube_data = get_youtube_data(query, 20)
@@ -57,4 +65,10 @@ def save_yt_data(query):
         db.add(yt_record)
     db.commit()
 
-save_yt_data("cricket")
+def start_youtube_service():
+    """
+    Periodically running YT function
+    """
+    while True:
+        save_yt_data()
+        time.sleep(30)
