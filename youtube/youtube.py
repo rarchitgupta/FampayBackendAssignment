@@ -1,7 +1,7 @@
 import time
 from googleapiclient.discovery import build
 import datetime
-import models
+import models.models as models
 from database import engine, SessionLocal
 from settings import query, api_keys
 

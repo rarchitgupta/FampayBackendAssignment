@@ -2,9 +2,9 @@ from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session
 from fastapi_pagination import Page, add_pagination, paginate
 import threading
-from youtube import start_youtube_service
+from youtube.youtube import start_youtube_service
 
-import models, schemas
+import models.models as models, schemas.schemas as schemas
 from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
@@ -20,6 +20,9 @@ def get_db():
 
 @app.on_event("startup")
 async def start_youtube_save_event():
+    """
+    Creates a daemon thread for background task of saving YouTube data
+    """
     daemon = threading.Thread(target=start_youtube_service, daemon=True, name='Background')
     daemon.start()
 
