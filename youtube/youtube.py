@@ -1,11 +1,9 @@
 import time
 from googleapiclient.discovery import build
-import datetime
 import models.models as models
 from database import engine, SessionLocal
 from settings import query, api_keys
 
-query = "cricket"
 
 available_api_keys = api_keys
 
@@ -53,7 +51,7 @@ def save_yt_data():
     """
     db = SessionLocal()
     models.Base.metadata.create_all(bind=engine)
-    youtube_data = get_youtube_data(query, 20)
+    youtube_data = get_youtube_data(query, 5)
     for data in youtube_data:
         yt_dict = get_relevant_dict(data)
         yt_record = models.Video(
